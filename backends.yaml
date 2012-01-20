@@ -1,0 +1,4 @@
+backends:
+- name: insertdb
+  class: B8
+  options: public

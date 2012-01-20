@@ -1,0 +1,19 @@
+body {
+  font-family: Verdana, Helvetica, sans-serif;
+  background-color: #DDDDDD;
+}
+
+.hidden {
+    visibility: hidden;
+    position: absolute;
+}
+
+body{
+    font-family: arial;
+    font-size: 13px;
+    width:1300px;
+}
+#mapCanvas {
+    width: 300px;
+    height: 200px;
+}

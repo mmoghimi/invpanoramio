@@ -1,0 +1,215 @@
+<html>
+    <head>
+        <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+        <title>inv(panoramio)</title>
+        <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+        <script type="text/javascript">
+            var geocoder = new google.maps.Geocoder();
+
+            function geocodePosition(pos) {
+                geocoder.geocode({
+                    latLng: pos
+                }, function(responses) {
+                    if (responses && responses.length > 0) {
+                        updateMarkerAddress(responses[0].formatted_address);
+                    } else {
+                        updateMarkerAddress('Cannot determine address at this location.');
+                    }
+                });
+            }
+
+            function updateMarkerStatus(str) {
+                document.getElementById('markerStatus').innerHTML = str;
+            }
+
+            function updateMarkerPosition(latLng) {
+                document.getElementById('info').innerHTML = [
+                    latLng.lat(),
+                    latLng.lng()
+                ].join(', ');
+
+                latDir = "N";
+                lngDir = "E";
+                if(latLng.lat() < 0){
+                    latDir = "S";
+                }
+                if(latLng.lng() < 0){
+                    lngDir = "W";
+                }
+                qlat = Math.abs(latLng.lat());
+                ilat = Math.floor(qlat);
+                xlat = ((qlat - ilat)*60);
+
+                qlng = Math.abs(latLng.lng());
+                ilng = Math.floor(qlng);
+                xlng = ((qlng - ilng)*60);
+
+                xlat = Math.round(xlat*1000)/1000;
+                xlng = Math.round(xlng*1000)/1000;
+
+                d2 = xlat.toFixed(3);
+                e2 = xlng.toFixed(3);
+                d1 = ilat.toString();
+                d2 = d2.toString();
+                e1 = ilng.toString();
+                e2 = e2.toString();
+
+                n = Math.abs(latLng.lat()); // Change to positive var decimal = n - Math.floor(n)
+                var decimal = n - Math.floor(n);
+                document.getElementById('geot').innerHTML = [
+                    latDir + ' ' + d1 + ' ' + d2,
+                    lngDir + ' ' + e1 + ' ' + e2
+                ].join(', ');
+
+                document.form1.lat.value = [
+                    latLng.lat()];
+                document.form1.lon.value = [
+                    latLng.lng()];
+                document.form1.wlat.value = [
+                    latDir + ' ' + d1 + ' ' + d2];
+                document.form1.wlon.value = [
+                    lngDir + ' ' + e1 + ' ' + e2];
+            }
+
+            function updateMarkerAddress(str) {
+                document.getElementById('address').innerHTML = str;
+            }
+
+            function centerPosition(newgeo,newzoom) {
+// document.getElementById('mcenter').innerHTML = [newgeo];
+// document.getElementById('mzoom').innerHTML = [newzoom];
+                document.form2.mcenter2.value = [newgeo];
+                document.form2.mzoom2.value = [newzoom];
+                document.form1.zm2.value = [newzoom];
+            }
+
+            function initialize() {
+                var latLng = new google.maps.LatLng{{ current_gps }};
+                var map = new google.maps.Map(document.getElementById('mapCanvas'), {
+                    zoom: 3,
+                    center: latLng,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                });
+                var marker = new google.maps.Marker({
+                    position: latLng,
+                    title: 'Point A',
+                    map: map,
+                    draggable: true
+                });
+
+                // Update current position info.
+                updateMarkerPosition(latLng);
+                geocodePosition(latLng);
+
+                // Add dragging event listeners.
+                google.maps.event.addListener(marker, 'dragstart', function() {
+                    updateMarkerAddress('Dragging...');
+                });
+
+                google.maps.event.addListener(marker, 'drag', function() {
+                    updateMarkerStatus('Dragging...');
+                    updateMarkerPosition(marker.getPosition());
+                });
+
+                google.maps.event.addListener(marker, 'dragend', function() {
+                    updateMarkerStatus('Drag ended');
+                    geocodePosition(marker.getPosition());
+                });
+
+                google.maps.event.addListener(map, 'bounds_changed', function(){
+                    var newgeo = map.get('center');
+                    var newzoom = map.get('zoom');
+                    centerPosition(newgeo,newzoom);
+                });
+
+            }
+
+            // Onload handler to fire off the app.
+            google.maps.event.addDomListener(window, 'load', initialize);
+        </script>
+    </head>
+    <body>
+
+    {{ debug_message }}
+    <br/>
+
+    <h3>{{ message }}</h3>
+
+    Iteration: {{ iter }}
+    <form action="/game" method="get">
+        <!--<textarea name="action" class="hidden">restart</textarea>-->
+        <input name="action" class="hidden" value="restart"/>
+        <input type="submit" value="Restart"/>
+    </form>
+
+    <table border="1">
+        <tr>
+            <td colspan="1" align="center">
+                Current Tag: {{ current_tag }}
+                <br/>
+
+                <form action="/game" method="get">
+                    <input name="action" class="hidden" value="tag_select"/>
+                    <button type="submit">Change Tag</button>
+                    <select name="tag_select">
+                        {% for tag in tags_list %} <option value="{{ tag }}"
+                        {%- if current_tag == tag -%} selected="selected"{% endif %}>{{ tag }}</option> {% endfor %}
+                    </select>
+                </form>
+            </td>
+            <td align="center">
+                Current Location: {{ current_gps }}
+                <br/>
+                Current Address: {{ current_address }}
+                <br/>
+            </td>
+            <td align="center">
+                <div id="mapCanvas"></div>
+            </td>
+        </tr>
+        <tr><td colspan="3" align="center"><h2>Click on the image which is more similar to the middle image in terms of {{ current_tag }}s</h2></td></tr>
+    	<tr>
+    		<td align="center" width="33%">
+                <a href="/game?action=select_left"><img width="100%" alt="Left Image" src="{{ left_image.url }}"/></a>
+                <br/>
+                {{ left_image.gps }}
+                <br/>
+                {{ left_image.address }}
+                <br/>
+                tags: {% if left_image.tags.strip().strip() == "" %} none {% else %} {{ left_image.tags }} {% endif %}
+            </td>
+
+    		<td align="center" width="33%">
+                <img width="100%" alt="Test Image" src="{{ test_image_url }}"/>
+                <form action="/game" method="get">
+                    <input name="action" class="hidden" value="pass"/>
+                    <input type="submit" value="Pass"/>
+                </form>
+            </td>
+
+    		<td align="center" width="33%">
+                <a href="/game?action=select_right"><img width="100%" alt="Right Image" src="{{ right_image.url }}"/></a>
+                <br/>
+                {{ right_image.gps }}
+                <br/>
+                {{ right_image.address }}
+                <br/>
+                tags: {% if right_image.tags.strip().strip() == "" %} none {% else %} {{ right_image.tags }} {% endif %}
+            </td>
+    	</tr>
+        
+        <tr>
+
+        </tr>
+    </table>
+
+
+
+    <hr/>
+    <img src="http://maps.googleapis.com/maps/api/streetview?size=200x200&location={{ current_gps[0] }},{{ current_gps[1] }}&heading=235&sensor=false">
+    <hr/>
+
+    Written by <a href="http://cs.ucsd.edu/~mmoghimi">Mohammad Moghimi</a>
+
+  </body>
+</html>

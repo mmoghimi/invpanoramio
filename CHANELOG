@@ -1,0 +1,5 @@
+1.1:
+- Started using gae-session instead of gae-utilities for handling sessions
+
+1.0:
+- First version
